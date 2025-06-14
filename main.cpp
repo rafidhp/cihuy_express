@@ -60,6 +60,7 @@ int house_count = 3; // number of houses (default 3)
 time_t start_time;
 int TIME_LIMIT = 60;
 int paketCount = 1;
+int nyawa = 3; // jumlah nyawa awal
 
 // helper function to check if terminal supports UTF-8
 bool check_utf8_support() {
@@ -433,6 +434,7 @@ void printMap() {
     cout << "\nSkor: " << score << endl;
     cout << "Paket dibawa: " << carriedPackages.size() << "/3" << endl;
     cout << EMOJI_CLOCK << " Sisa waktu: " << get_remaining_time() << " detik" << endl;
+    cout << "❤️  Nyawa: " << nyawa << endl;  // Baris baru untuk menampilkan nyawa
 
     // display direction to nearest house if carrying packages
     if (!house_locations.empty() && !carriedPackages.empty()) {
@@ -482,36 +484,50 @@ void moveCourier(char direction) {
 
     // check if it hits the wall
     if (game_map[nextY][nextX] == '#') {
+        nyawa--; // kurangi nyawa
+        
         #ifdef _WIN32
             system("cls");
         #else
             system("clear");
         #endif
 
-        cout << "💥 GAME OVER! Kamu menabrak tembok! 💥" << endl;
-        cout << "Skor akhir: " << score << endl;
-
-        cout << "High score sebelumnya: " << old_highscore << " point" << endl;
-
-        if (score > old_highscore) {
-            cout << "\n🎉 Selamat! Skor baru kamu (" << score << ") adalah rekor baru! 🎉\n";
-            save_user(current_user, score);
-            old_highscore = score;
-        } else {
-            cout << "\nSkor kamu belum mengalahkan rekor sebelumnya 😢\n";
-            cout << "Skor tertinggi kamu tetap: " << old_highscore << " point\n";
+        if (nyawa > 0) {
+            cout << "💥 Kamu menabrak tembok! Nyawa tersisa: " << nyawa << " 💥" << endl;
+            
+            #ifdef _WIN32
+                Sleep(2000);
+            #else
+                usleep(2000000);
+            #endif
+            return; // kembalikan tanpa mengakhiri game
         }
+        else {
+            cout << "💥 GAME OVER! Kamu kehabisan nyawa! 💥" << endl;
+            cout << "Skor akhir: " << score << endl;
 
-        #ifdef _WIN32
-            cout << "\n";
-            system("pause");
-        #else
-            cout << "\nTekan ENTER untuk mulai...";
-            cin.ignore();
-            cin.get();
-        #endif
+            cout << "High score sebelumnya: " << old_highscore << " point" << endl;
 
-        post_game_options();
+            if (score > old_highscore) {
+                cout << "\n🎉 Selamat! Skor baru kamu (" << score << ") adalah rekor baru! 🎉\n";
+                save_user(current_user, score);
+                old_highscore = score;
+            } else {
+                cout << "\nSkor kamu belum mengalahkan rekor sebelumnya 😢\n";
+                cout << "Skor tertinggi kamu tetap: " << old_highscore << " point\n";
+            }
+
+            #ifdef _WIN32
+                cout << "\n";
+                system("pause");
+            #else
+                cout << "\nTekan ENTER untuk mulai...";
+                cin.ignore();
+                cin.get();
+            #endif
+
+            post_game_options();
+        }
     }
 
     // courier position update
@@ -642,10 +658,23 @@ void post_game_options() {
         cout << "          CIHUY EXPRESS - DELIVERY GAME                " << endl;
         cout << "=======================================================" << endl;
         cout << "\n[1] Main lagiiii!!!\n[2] Lihat leaderbord\n[3] Keluar ah cape\n\nSilakan pilih opsi (1-3): ";
-        cin >> choice;
+        getline(cin, choice);  // Menggunakan getline untuk menangkap input termasuk enter
 
-        if (choice == "1") {
+        // Pengecekan input kosong
+        if (choice.empty()) {
+            cout << "❌ Silahkan pilih menu! (Tekan 1, 2, atau 3)" << endl;
+            
+            #ifdef _WIN32
+                Sleep(1500);  // Tunggu 1.5 detik
+            #else
+                usleep(1500000);
+            #endif
+            continue;  // Lanjutkan loop untuk meminta input lagi
+        }
+        // Pengecekan pilihan menu
+        else if (choice == "1") {
             score = 0;
+            nyawa = 3;
             carriedPackages = stack<char>();
             TIME_LIMIT = 45;
 
@@ -657,13 +686,16 @@ void post_game_options() {
             generateMap();
             start_time = time(NULL);
             break;
-        } else if (choice == "2") {
+        }
+        else if (choice == "2") {
             show_leaderboard();
             break;
-        } else if (choice == "3") {
+        }
+        else if (choice == "3") {
             cout << "\n 👋 Terima kasih telah bermain " << current_user << "! Sampai jumpa lagi! 👋\n\n";
             exit(0);
-        } else {
+        }
+        else {
             cout << "❌ Pilihan tidak valid! Silakan pilih 1, 2, atau 3." << endl;
 
             #ifdef _WIN32
